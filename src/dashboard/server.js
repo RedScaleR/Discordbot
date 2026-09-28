@@ -263,13 +263,13 @@ async function handleApi(client, req, res, url) {
       const body = await readJson(req);
       const ai = draftAi(body);
       const message = String(body.message ?? '').trim().slice(0, 500) || 'Hi Mochi! Introduce yourself in one sentence.';
-      const reply = await aiRequest(() =>
+      const { text, model } = await aiRequest(() =>
         chat(ai, [
           { role: 'system', content: systemPrompt(ai, guild.name) },
           { role: 'user', content: `Friend: ${message}` },
         ]),
       );
-      return sendJson(res, 200, { reply });
+      return sendJson(res, 200, { reply: text, model });
     }
     case 'GET /members':
       return sendJson(res, 200, listMembers(client, guild, url.searchParams.get('q') ?? ''));

@@ -943,7 +943,7 @@ function modelPicker(field, id, value) {
     list: listId,
     maxlength: field.max,
     spellcheck: 'false',
-    placeholder: field.defaults[provider] ? `Default: ${field.defaults[provider]}` : 'Model name',
+    placeholder: provider === 'custom' ? 'Model name' : 'Automatic (recommended)',
     onInput: () => change(field.path, input.value),
   });
   input.value = value;
@@ -982,9 +982,9 @@ function aiTester() {
     output.className = 'ai-reply thinking';
     output.textContent = 'Mochi is thinking… (the first reply from Ollama can take a minute)';
     try {
-      const { reply } = await api('/api/ai/test', { method: 'POST', body: { ai: state.draft.ai, message: input.value } });
+      const { reply, model } = await api('/api/ai/test', { method: 'POST', body: { ai: state.draft.ai, message: input.value } });
       output.className = 'ai-reply';
-      output.replaceChildren(el('strong', { text: 'Mochi: ' }), el('span', { text: reply || '(no answer)' }));
+      output.replaceChildren(el('strong', { text: 'Mochi: ' }), el('span', { text: reply || '(no answer)' }), el('small', { text: `using ${model}` }));
     } catch (err) {
       output.className = 'ai-reply error';
       output.replaceChildren(el('span', { text: err.message }), err.detail ? el('small', { text: err.detail }) : null);

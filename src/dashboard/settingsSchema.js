@@ -119,7 +119,7 @@ const SECTIONS = [
         type: 'model',
         max: 200,
         label: 'Model',
-        help: 'Leave empty for the default, or press "Load models" to pick one.',
+        help: 'Leave empty and Mochi picks a good model by itself, or press "Load models" to choose one.',
         defaults: Object.fromEntries(Object.entries(PROVIDERS).map(([value, provider]) => [value, provider.defaultModel])),
       },
       {

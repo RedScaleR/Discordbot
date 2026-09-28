@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.1
+
+- AI chat picks a working model by itself when the Model box is empty, and picks again if a model gets retired (fixes "model does not exist" with Groq)
+- "Load models" only lists models that can chat
+- "Try it out" shows which model answered
+
 ## 1.5.0
 
 - Update-Mochi.bat: download a new zip, double-click, done. Your token, settings and data stay safe, and it backs up your data first

@@ -44,7 +44,7 @@ async function answer(message) {
   const typing = setInterval(() => message.channel.sendTyping().catch(() => {}), 8000);
   message.channel.sendTyping().catch(() => {});
   try {
-    const reply = await chat(config.ai, await buildConversation(message));
+    const { text: reply } = await chat(config.ai, await buildConversation(message));
     const text = reply.length > 1900 ? `${reply.slice(0, 1900)}…` : reply || '(´・ω・`) ...I lost my words';
     await message.reply({ content: text, allowedMentions: { parse: [], repliedUser: false } });
     record(message.guildId, 'ai', `${message.author.username} chatted with Mochi in #${message.channel.name}`);
