@@ -1,6 +1,7 @@
 const { Events, ActivityType, OAuth2Scopes, PermissionFlagsBits } = require('discord.js');
 const { registerCommands } = require('../commandLoader');
 const { startReminders } = require('../features/reminders');
+const { version } = require('../../package.json');
 
 const INVITE_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
@@ -26,7 +27,7 @@ module.exports = {
   once: true,
 
   async execute(client) {
-    console.log(`\n  Mochi is awake! Logged in as ${client.user.tag} (◕‿◕)\n`);
+    console.log(`\n  Mochi v${version} is awake! Logged in as ${client.user.tag} (◕‿◕)\n`);
     console.log(`  Invite me to your server with this link:`);
     console.log(`  ${client.generateInvite({ scopes: [OAuth2Scopes.Bot, OAuth2Scopes.ApplicationsCommands], permissions: INVITE_PERMISSIONS })}\n`);
 
