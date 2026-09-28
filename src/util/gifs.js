@@ -4,19 +4,23 @@ const { version } = require('../../package.json');
 const PROVIDERS = [
   {
     name: 'nekos.best',
-    categories: ['hug', 'pat', 'poke', 'highfive'],
+    categories: [
+      'hug', 'pat', 'poke', 'highfive', 'cuddle', 'wave', 'bonk', 'slap', 'tickle', 'bite', 'feed', 'handhold',
+      'happy', 'dance', 'cry', 'blush', 'laugh', 'smug', 'pout', 'angry', 'sleep', 'yawn', 'shrug', 'facepalm',
+      'think', 'thumbsup', 'clap', 'sip', 'nom', 'shocked',
+    ],
     url: (category) => `https://nekos.best/api/v2/${category}`,
     parse: (body) => body.results?.[0] && { url: body.results[0].url, source: body.results[0].anime_name },
   },
   {
     name: 'nekos.life',
-    categories: ['hug', 'pat', 'poke'],
+    categories: ['hug', 'pat', 'poke', 'cuddle', 'slap', 'tickle', 'feed', 'smug'],
     url: (category) => `https://nekos.life/api/v2/img/${category}`,
     parse: (body) => body.url && { url: body.url },
   },
   {
     name: 'purrbot',
-    categories: ['hug', 'pat', 'poke'],
+    categories: ['hug', 'pat', 'poke', 'cuddle', 'slap', 'tickle', 'bite', 'blush', 'cry', 'dance', 'pout', 'angry'],
     url: (category) => `https://api.purrbot.site/v2/img/sfw/${category}/gif`,
     parse: (body) => !body.error && body.link && { url: body.link },
   },

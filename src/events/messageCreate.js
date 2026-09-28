@@ -1,6 +1,7 @@
 const { Events } = require('discord.js');
 const { runAutomod } = require('../features/automod');
 const { giveXp } = require('../features/leveling');
+const { replyWithAi } = require('../features/aiChat');
 const db = require('../database');
 
 module.exports = {
@@ -11,5 +12,6 @@ module.exports = {
     db.bumpStat(message.guildId, 'messages');
     if (await runAutomod(message)) return;
     await giveXp(message);
+    await replyWithAi(message);
   },
 };

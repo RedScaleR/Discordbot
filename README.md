@@ -14,6 +14,10 @@ Moderation, games, levels, coins, welcome messages, role buttons, logging and au
 
 Put Mochi's role near the top of **Server Settings → Roles** so it can moderate people and hand out roles.
 
+## Updating Mochi
+
+Download the new `mochi-bot.zip`, then double-click **`Update-Mochi.bat`**. It finds the newest zip in your Downloads folder (or drag a zip onto it), waits for you to close Mochi, backs up your data to `data/backups`, and installs the update. Your token (`.env`), settings (`config.json`), data and `my-commands` folder are never touched.
+
 ## Start Mochi with Windows
 
 After running `start.bat` once, double-click **`autostart-on.bat`**. From then on Mochi starts by itself in a minimized window whenever you log in, and restarts itself if it stops unexpectedly (like when the internet isn't connected yet right after boot). Close its window to stop it. Double-click **`autostart-off.bat`** to turn this off.
@@ -50,23 +54,40 @@ While Mochi is running, open **http://localhost:3000** in your browser:
 It only works on the PC running Mochi, so nobody else can open it. Every change made there is posted to your log channel.
 If port 3000 is taken, add `DASHBOARD_PORT=3001` to `.env`. Message and command counts start from when you first run v1.3.0.
 
+## AI chat
+
+Open the dashboard → **Settings** → **🤖 AI chat**, pick a provider and a personality, press **Send** in "Try it out", then switch it on and save. After that, @mention Mochi or reply to one of its messages to chat. You can also pick channels where Mochi answers everything.
+
+| Provider | Cost | Setup |
+| --- | --- | --- |
+| **Ollama** | Free, runs on your PC | Install it from [ollama.com](https://ollama.com/download), then run `ollama pull llama3.2` in a terminal once. Keep Ollama open. Needs 8 GB+ RAM |
+| **Groq** | Free with daily limits | Make a key at [console.groq.com/keys](https://console.groq.com/keys) and paste it in |
+| **Google Gemini** | Free with daily limits | Make a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and paste it in |
+| **OpenRouter** | Free models (ending in `:free`) | Make a key at [openrouter.ai/keys](https://openrouter.ai/keys), then "Load models" and pick a free one |
+| **Custom** | Depends | Any OpenAI-compatible server, like LM Studio |
+
+With Groq, Gemini and OpenRouter, the recent messages Mochi reads are sent to that company. Ollama keeps everything on your PC.
+
+Personalities: cute (default), sassy, sleepy, chaotic gremlin, wise sage, tsundere, or write your own.
+
 ## Commands
 
 | | |
 | --- | --- |
-| 🎲 **Fun** | `/8ball` `/roll` `/coinflip` `/rps` `/trivia` `/ship` `/rate` `/choose` `/hug` `/pat` `/boop` `/highfive` |
+| 🎲 **Fun** | `/8ball` `/roll` `/coinflip` `/rps` `/trivia` `/ship` `/rate` `/choose` |
+| 🤗 **Actions** | `/hug` `/pat` `/boop` `/highfive` `/cuddle` `/wave` `/bonk` `/slap` `/tickle` `/bite` `/feed` `/handhold` `/emote` |
 | 🍡 **Levels & economy** | `/rank` `/leaderboard` `/balance` `/daily` `/work` `/pay` `/slots` |
 | 🧰 **Utility** | `/help` `/ping` `/serverinfo` `/userinfo` `/avatar` `/poll` `/remind` |
 | 🔨 **Moderation** | `/ban` `/unban` `/kick` `/timeout` `/untimeout` `/warn` `/warnings` `/purge` `/slowmode` |
 | ⚙️ **Admin** | `/rolepanel` posts buttons people click to give themselves roles |
 
-`/hug` `/pat` `/boop` `/highfive` come with a random anime GIF from [nekos.best](https://nekos.best), with [nekos.life](https://nekos.life) and [purrbot](https://purrbot.site) as backups (free, no setup). If they're all unreachable the commands still work, just without the GIF.
+Action commands come with a random anime GIF from [nekos.best](https://nekos.best), with [nekos.life](https://nekos.life) and [purrbot](https://purrbot.site) as backups (free, no setup). If they're all unreachable the commands still work, just without the GIF.
 Moderation and admin commands only show up for people with the matching permissions.
 Data (XP, coins, warnings, reminders) lives in `data/mochi.db`. Back it up if you care about it!
 
 ## Adding your own command
 
-Drop a file in a folder under `src/commands/`, restart, and it shows up automatically:
+Make a folder called `my-commands` next to `src`, drop a file in it, and restart. It shows up automatically, and updates never touch that folder:
 
 ```js
 const { SlashCommandBuilder } = require('discord.js');

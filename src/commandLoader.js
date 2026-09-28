@@ -3,19 +3,23 @@ const path = require('node:path');
 const { Collection, RESTJSONErrorCodes } = require('discord.js');
 
 const COMMANDS_DIR = path.join(__dirname, 'commands');
+// Your own command files go here. Updates replace src/ but never touch this folder.
+const MY_COMMANDS_DIR = path.join(__dirname, '..', 'my-commands');
 
-/** Loads every command from src/commands/<category>/*.js. A file can export one command or a list. */
-function loadCommands() {
-  const commands = new Collection();
-  for (const category of fs.readdirSync(COMMANDS_DIR)) {
-    const folder = path.join(COMMANDS_DIR, category);
-    for (const file of fs.readdirSync(folder).filter((name) => name.endsWith('.js'))) {
-      for (const command of [require(path.join(folder, file))].flat()) {
-        command.category = category;
-        commands.set(command.data.name, command);
-      }
+function loadFolder(commands, folder, category) {
+  for (const file of fs.readdirSync(folder).filter((name) => name.endsWith('.js'))) {
+    for (const command of [require(path.join(folder, file))].flat()) {
+      command.category = category;
+      commands.set(command.data.name, command);
     }
   }
+}
+
+/** Loads every command from src/commands/<category>/*.js and my-commands/*.js. A file can export one command or a list. */
+function loadCommands() {
+  const commands = new Collection();
+  for (const category of fs.readdirSync(COMMANDS_DIR)) loadFolder(commands, path.join(COMMANDS_DIR, category), category);
+  if (fs.existsSync(MY_COMMANDS_DIR)) loadFolder(commands, MY_COMMANDS_DIR, 'extra');
   return commands;
 }
 

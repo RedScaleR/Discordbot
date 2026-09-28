@@ -1,5 +1,9 @@
+const { PROVIDERS } = require('../ai/providers');
+const { PERSONALITIES } = require('../ai/personalities');
+
 // Describes every setting the dashboard can edit. The page builds its form from this,
 // and the server uses it to check whatever the page sends back.
+// `showIf` only hides a field on the page while another setting has a different value.
 const SECTIONS = [
   {
     title: '📜 Logging',
@@ -83,9 +87,71 @@ const SECTIONS = [
       { path: 'automod.exemptChannelIds', type: 'channels', label: 'Ignore these channels' },
     ],
   },
+  {
+    title: '🤖 AI chat',
+    fields: [
+      { path: 'ai.enabled', type: 'bool', label: 'AI chat on', help: 'Mochi replies when someone @mentions it or replies to one of its messages.' },
+      {
+        path: 'ai.provider',
+        type: 'select',
+        label: 'AI provider',
+        options: Object.entries(PROVIDERS).map(([value, provider]) => ({ value, label: provider.label, help: provider.help })),
+      },
+      { path: 'ai.apiKeys.groq', type: 'secret', max: 300, label: 'Groq API key', showIf: { path: 'ai.provider', equals: 'groq' } },
+      { path: 'ai.apiKeys.gemini', type: 'secret', max: 300, label: 'Gemini API key', showIf: { path: 'ai.provider', equals: 'gemini' } },
+      { path: 'ai.apiKeys.openrouter', type: 'secret', max: 300, label: 'OpenRouter API key', showIf: { path: 'ai.provider', equals: 'openrouter' } },
+      {
+        path: 'ai.customUrl',
+        type: 'url',
+        label: 'Server address',
+        help: 'Like http://localhost:1234/v1',
+        showIf: { path: 'ai.provider', equals: 'custom' },
+      },
+      {
+        path: 'ai.apiKeys.custom',
+        type: 'secret',
+        max: 300,
+        label: 'API key (if it needs one)',
+        showIf: { path: 'ai.provider', equals: 'custom' },
+      },
+      {
+        path: 'ai.model',
+        type: 'model',
+        max: 200,
+        label: 'Model',
+        help: 'Leave empty for the default, or press "Load models" to pick one.',
+        defaults: Object.fromEntries(Object.entries(PROVIDERS).map(([value, provider]) => [value, provider.defaultModel])),
+      },
+      {
+        path: 'ai.personality',
+        type: 'personality',
+        label: 'Personality',
+        options: Object.entries(PERSONALITIES).map(([value, personality]) => ({ value, label: personality.label, prompt: personality.prompt })),
+      },
+      {
+        path: 'ai.customPersonality',
+        type: 'text',
+        multiline: true,
+        max: 2000,
+        label: 'Your personality',
+        help: 'Describe how Mochi should act, like "You are a grumpy pirate who loves cats."',
+        showIf: { path: 'ai.personality', equals: 'custom' },
+      },
+      {
+        path: 'ai.channelIds',
+        type: 'channels',
+        label: 'Always chat in these channels',
+        help: 'Here Mochi answers every message. Everywhere else, only when @mentioned or replied to.',
+      },
+      { path: 'ai.contextMessages', type: 'int', min: 0, max: 30, label: 'Messages it reads back', help: 'How much of the recent chat Mochi sees before answering.' },
+      { path: 'ai.cooldownSeconds', type: 'int', min: 0, max: 300, label: 'Seconds between replies per person' },
+      { type: 'aiTest', label: 'Try it out', help: 'Uses the settings above, even before you save.' },
+    ],
+  },
 ];
 
-const FIELDS = SECTIONS.flatMap((section) => section.fields);
+// Fields without a path (like the test box) are page-only and hold no setting.
+const FIELDS = SECTIONS.flatMap((section) => section.fields).filter((field) => field.path);
 const SNOWFLAKE = /^\d{17,20}$/;
 
 const getPath = (object, path) => path.split('.').reduce((value, key) => value?.[key], object);
@@ -125,6 +191,18 @@ function clean(field, value) {
     case 'channel':
       if (value !== '' && !SNOWFLAKE.test(value)) fail("isn't a valid channel");
       return value;
+    case 'select':
+    case 'personality':
+      if (!field.options.some((option) => option.value === value)) fail('is not one of the choices');
+      return value;
+    case 'secret':
+    case 'model':
+      if (typeof value !== 'string' || value.length > field.max) fail('is invalid');
+      return value.trim();
+    case 'url':
+      if (typeof value !== 'string' || value.length > 300) fail('is invalid');
+      if (value && !/^https?:\/\/[^\s]+$/i.test(value.trim())) fail('must start with http:// or https://');
+      return value.trim();
     case 'roles':
     case 'channels':
       if (!Array.isArray(value) || value.length > 50 || !value.every((id) => SNOWFLAKE.test(id))) fail('has an invalid entry');

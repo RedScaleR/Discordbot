@@ -6,7 +6,7 @@ const $ = (selector) => document.querySelector(selector);
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DEFAULT_AVATAR = 'https://cdn.discordapp.com/embed/avatars/0.png';
 const MEDALS = ['🥇', '🥈', '🥉'];
-const FEED_ICONS = { command: '✨', automod: '🛡️', join: '📥', leave: '📤', level: '🎉', mod: '🔨', dashboard: '🎛️' };
+const FEED_ICONS = { command: '✨', automod: '🛡️', join: '📥', leave: '📤', level: '🎉', mod: '🔨', dashboard: '🎛️', ai: '🤖' };
 const TABS = ['overview', 'members', 'settings'];
 
 const state = {
@@ -92,7 +92,9 @@ async function api(path, { method = 'GET', body } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(data.error || `Request failed (${response.status})`), { status: response.status, field: data.field });
+  if (!response.ok) {
+    throw Object.assign(new Error(data.error || `Request failed (${response.status})`), { status: response.status, field: data.field, detail: data.detail });
+  }
   return data;
 }
 
@@ -716,9 +718,13 @@ function updateDirty() {
   $('#save-bar').hidden = !isDirty();
 }
 
+// Settings other fields depend on (for showIf or default hints), so changing them redraws the form.
+const REDRAW_ON = new Set(['ai.provider', 'ai.personality']);
+
 function change(path, value) {
   setPath(state.draft, path, value);
   updateDirty();
+  if (REDRAW_ON.has(path)) renderSettingsForm();
 }
 
 function channelSelect(value, emptyLabel, onChange) {
@@ -850,8 +856,8 @@ function rewardsEditor() {
 }
 
 function settingControl(field) {
-  const value = getPath(state.draft, field.path);
-  const id = `setting-${field.path.replaceAll('.', '-')}`;
+  const value = field.path ? getPath(state.draft, field.path) : undefined;
+  const id = `setting-${(field.path ?? field.type).replaceAll('.', '-')}`;
   switch (field.type) {
     case 'bool': {
       const input = el('input', { type: 'checkbox', id, onChange: () => change(field.path, input.checked) });
@@ -888,9 +894,112 @@ function settingControl(field) {
     }
     case 'roleRewards':
       return rewardsEditor();
+    case 'select':
+    case 'personality': {
+      const select = el(
+        'select',
+        { id, onChange: () => change(field.path, select.value) },
+        field.options.map((option) => el('option', { value: option.value, text: option.label })),
+      );
+      select.value = value;
+      const chosen = field.options.find((option) => option.value === value);
+      if (field.type === 'select') return el('div', {}, select, chosen?.help ? el('p', { className: 'option-help', text: chosen.help }) : null);
+      return el('div', {}, select, chosen?.prompt ? el('blockquote', { className: 'preview', text: chosen.prompt }) : null);
+    }
+    case 'secret': {
+      const input = el('input', { type: 'password', id, maxlength: field.max, autocomplete: 'off', spellcheck: 'false', onInput: () => change(field.path, input.value) });
+      input.value = value;
+      const toggle = el('button', {
+        type: 'button',
+        className: 'btn btn-ghost btn-small',
+        text: 'Show',
+        onClick: () => {
+          input.type = input.type === 'password' ? 'text' : 'password';
+          toggle.textContent = input.type === 'password' ? 'Show' : 'Hide';
+        },
+      });
+      return el('div', { className: 'inline-row' }, input, toggle);
+    }
+    case 'url': {
+      const input = el('input', { type: 'text', id, placeholder: 'http://localhost:1234/v1', spellcheck: 'false', onInput: () => change(field.path, input.value) });
+      input.value = value;
+      return input;
+    }
+    case 'model':
+      return modelPicker(field, id, value);
+    case 'aiTest':
+      return aiTester();
     default:
       return el('span', { text: 'Unsupported setting' });
   }
+}
+
+function modelPicker(field, id, value) {
+  const provider = getPath(state.draft, 'ai.provider');
+  const listId = `${id}-list`;
+  const input = el('input', {
+    type: 'text',
+    id,
+    list: listId,
+    maxlength: field.max,
+    spellcheck: 'false',
+    placeholder: field.defaults[provider] ? `Default: ${field.defaults[provider]}` : 'Model name',
+    onInput: () => change(field.path, input.value),
+  });
+  input.value = value;
+  const list = el('datalist', { id: listId });
+  const status = el('p', { className: 'option-help' });
+  const load = el('button', {
+    type: 'button',
+    className: 'btn btn-ghost btn-small',
+    text: 'Load models',
+    onClick: async () => {
+      load.disabled = true;
+      status.textContent = 'Asking for the list…';
+      try {
+        const { models } = await api('/api/ai/models', { method: 'POST', body: { ai: state.draft.ai } });
+        list.replaceChildren(...models.map((model) => el('option', { value: model })));
+        status.textContent = models.length
+          ? `Found ${plural(models.length, 'model')}. Click the box to pick one.`
+          : 'No models found. With Ollama, run "ollama pull llama3.2" first.';
+      } catch (err) {
+        status.textContent = err.message;
+      } finally {
+        load.disabled = false;
+      }
+    },
+  });
+  return el('div', {}, el('div', { className: 'inline-row' }, input, load), list, status);
+}
+
+function aiTester() {
+  const output = el('div', { className: 'ai-reply', 'aria-live': 'polite' });
+  const send = el('button', { type: 'button', className: 'btn btn-primary btn-small', text: 'Send' });
+  const input = el('input', { type: 'text', maxlength: 500, placeholder: 'Say something to Mochi…', 'aria-label': 'Message to test the AI' });
+
+  const run = async () => {
+    send.disabled = true;
+    output.className = 'ai-reply thinking';
+    output.textContent = 'Mochi is thinking… (the first reply from Ollama can take a minute)';
+    try {
+      const { reply } = await api('/api/ai/test', { method: 'POST', body: { ai: state.draft.ai, message: input.value } });
+      output.className = 'ai-reply';
+      output.replaceChildren(el('strong', { text: 'Mochi: ' }), el('span', { text: reply || '(no answer)' }));
+    } catch (err) {
+      output.className = 'ai-reply error';
+      output.replaceChildren(el('span', { text: err.message }), err.detail ? el('small', { text: err.detail }) : null);
+    } finally {
+      send.disabled = false;
+    }
+  };
+  send.addEventListener('click', run);
+  // Enter sends the test message instead of saving the whole settings form.
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    if (!send.disabled) run();
+  });
+  return el('div', {}, el('div', { className: 'inline-row' }, input, send), output);
 }
 
 function renderSettingsForm() {
@@ -902,8 +1011,9 @@ function renderSettingsForm() {
         {},
         el('legend', { text: section.title }),
         section.fields.map((field) => {
-          const id = `setting-${field.path.replaceAll('.', '-')}`;
-          const labelTag = ['roles', 'channels', 'roleRewards'].includes(field.type) ? 'p' : 'label';
+          if (field.showIf && getPath(state.draft, field.showIf.path) !== field.showIf.equals) return null;
+          const id = `setting-${(field.path ?? field.type).replaceAll('.', '-')}`;
+          const labelTag = ['roles', 'channels', 'roleRewards', 'aiTest', 'model'].includes(field.type) ? 'p' : 'label';
           return el(
             'div',
             { className: 'setting', 'data-path': field.path },

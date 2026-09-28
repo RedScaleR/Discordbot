@@ -3,10 +3,12 @@ const { cuteEmbed } = require('../../util/cute');
 
 const CATEGORIES = {
   fun: '🎲 Fun & Games',
+  actions: '🤗 Actions & GIFs',
   economy: '🍡 Levels & Economy',
   utility: '🧰 Utility',
   moderation: '🔨 Moderation',
   admin: '⚙️ Admin',
+  extra: '🌟 Extra',
 };
 
 module.exports = {

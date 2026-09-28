@@ -42,6 +42,18 @@ const DEFAULTS = {
     exemptRoleIds: [],
     exemptChannelIds: [],
   },
+  ai: {
+    enabled: false,
+    provider: 'ollama',
+    model: '',
+    apiKeys: { groq: '', gemini: '', openrouter: '', custom: '' },
+    customUrl: '',
+    personality: 'cute',
+    customPersonality: '',
+    channelIds: [],
+    contextMessages: 12,
+    cooldownSeconds: 5,
+  },
 };
 
 function isPlainObject(value) {
@@ -81,5 +93,8 @@ function save(next) {
 
 // Hidden from JSON.stringify and Object.keys, so it never ends up in config.json.
 Object.defineProperty(config, 'save', { value: save });
+
+// Updates don't ship a config.json (so they can't overwrite yours), so create one on first start.
+if (!fs.existsSync(CONFIG_PATH)) save(config);
 
 module.exports = config;

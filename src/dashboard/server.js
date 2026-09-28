@@ -8,6 +8,8 @@ const { levelFromXp } = require('../util/levels');
 const { sendLog } = require('../util/logger');
 const { feed, record, recentActivity } = require('../activity');
 const { SECTIONS, sanitize } = require('./settingsSchema');
+const { chat, listModels, AiError } = require('../ai/providers');
+const { systemPrompt } = require('../ai/personalities');
 const { version } = require('../../package.json');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -165,6 +167,20 @@ function wholeNumber(value, label) {
   return value;
 }
 
+/** Checks AI settings sent from the page (which may not be saved yet) with the same rules as saving. */
+function draftAi(body) {
+  return sanitize({ ...JSON.parse(JSON.stringify(config)), ai: body.ai }, config).ai;
+}
+
+async function aiRequest(work) {
+  try {
+    return await work();
+  } catch (err) {
+    if (!(err instanceof AiError)) throw err;
+    throw Object.assign(new HttpError(400, err.userMessage), { detail: err.message });
+  }
+}
+
 /** Posts dashboard edits in the log channel and the live feed, so changes are never secret. */
 function announce(guild, text) {
   record(guild.id, 'dashboard', text);
@@ -239,6 +255,22 @@ async function handleApi(client, req, res, url) {
       await announce(guild, 'Settings were updated');
       return sendJson(res, 200, settingsPayload(guild));
     }
+    case 'POST /ai/models': {
+      const ai = draftAi(await readJson(req));
+      return sendJson(res, 200, { models: await aiRequest(() => listModels(ai)) });
+    }
+    case 'POST /ai/test': {
+      const body = await readJson(req);
+      const ai = draftAi(body);
+      const message = String(body.message ?? '').trim().slice(0, 500) || 'Hi Mochi! Introduce yourself in one sentence.';
+      const reply = await aiRequest(() =>
+        chat(ai, [
+          { role: 'system', content: systemPrompt(ai, guild.name) },
+          { role: 'user', content: `Friend: ${message}` },
+        ]),
+      );
+      return sendJson(res, 200, { reply });
+    }
     case 'GET /members':
       return sendJson(res, 200, listMembers(client, guild, url.searchParams.get('q') ?? ''));
     case 'GET /members/:id':
@@ -284,7 +316,7 @@ function startDashboard(client, port) {
     } catch (err) {
       if (!err.status) console.error('[dashboard]', err);
       if (res.headersSent) return res.end();
-      sendJson(res, err.status ?? 500, { error: err.status ? err.message : 'Something went wrong', field: err.field });
+      sendJson(res, err.status ?? 500, { error: err.status ? err.message : 'Something went wrong', field: err.field, detail: err.detail });
     }
   });
 

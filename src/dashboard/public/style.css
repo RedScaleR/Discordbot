@@ -218,6 +218,7 @@ code {
 
 select,
 input[type='text'],
+input[type='password'],
 input[type='search'],
 input[type='number'],
 textarea {
@@ -1071,4 +1072,73 @@ tr:last-child td {
 .toast.error {
   background: var(--critical);
   color: #fff;
+}
+
+/* ---------- AI settings ---------- */
+
+.inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  max-width: 560px;
+}
+
+.inline-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-small {
+  padding: 6px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.option-help {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+  max-width: 560px;
+}
+
+.preview {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 0 10px 10px 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  max-width: 560px;
+}
+
+.ai-reply {
+  margin-top: 10px;
+  max-width: 560px;
+  font-size: 14px;
+}
+
+.ai-reply:empty {
+  display: none;
+}
+
+.ai-reply:not(:empty) {
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: 12px;
+}
+
+.ai-reply.thinking {
+  color: var(--muted);
+}
+
+.ai-reply.error {
+  color: var(--critical);
+}
+
+.ai-reply small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
 }
