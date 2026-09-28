@@ -43,6 +43,7 @@ Right-click a channel or role → **Copy ID** (turn on **Developer Mode** in Dis
 | 🔨 **Moderation** | `/ban` `/unban` `/kick` `/timeout` `/untimeout` `/warn` `/warnings` `/purge` `/slowmode` |
 | ⚙️ **Admin** | `/rolepanel` posts buttons people click to give themselves roles |
 
+`/hug` `/pat` `/boop` `/highfive` come with a random anime GIF from [nekos.best](https://nekos.best) (free, no setup). If the site is down they still work, just without the GIF.
 Moderation and admin commands only show up for people with the matching permissions.
 Data (XP, coins, warnings, reminders) lives in `data/mochi.db`. Back it up if you care about it!
 
