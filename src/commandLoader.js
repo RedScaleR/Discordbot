@@ -9,8 +9,13 @@ const MY_COMMANDS_DIR = path.join(__dirname, '..', 'my-commands');
 function loadFolder(commands, folder, category) {
   for (const file of fs.readdirSync(folder).filter((name) => name.endsWith('.js'))) {
     for (const command of [require(path.join(folder, file))].flat()) {
+      const { name } = command.data;
+      if (commands.has(name)) {
+        console.warn(`[commands] Two commands are called /${name}. Skipping the one in ${path.join(folder, file)}.`);
+        continue;
+      }
       command.category = category;
-      commands.set(command.data.name, command);
+      commands.set(name, command);
     }
   }
 }

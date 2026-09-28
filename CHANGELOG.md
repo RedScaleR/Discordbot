@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2
+
+- Flirty pack: /kiss /peck /blowkiss /kabedon /lappillow /carry
+- Chaos pack: /punch /dropkick /yeet /shoot /tableflip /baka /bleh
+- Mochi warns if two commands share a name instead of silently dropping one
+
 ## 1.5.1
 
 - AI chat picks a working model by itself when the Model box is empty, and picks again if a model gets retired (fixes "model does not exist" with Groq)

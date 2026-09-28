@@ -76,6 +76,8 @@ Personalities: cute (default), sassy, sleepy, chaotic gremlin, wise sage, tsunde
 | --- | --- |
 | 🎲 **Fun** | `/8ball` `/roll` `/coinflip` `/rps` `/trivia` `/ship` `/rate` `/choose` |
 | 🤗 **Actions** | `/hug` `/pat` `/boop` `/highfive` `/cuddle` `/wave` `/bonk` `/slap` `/tickle` `/bite` `/feed` `/handhold` `/emote` |
+| 💋 **Flirty** | `/kiss` `/peck` `/blowkiss` `/kabedon` `/lappillow` `/carry` |
+| 💥 **Chaos** | `/punch` `/dropkick` `/yeet` `/shoot` `/tableflip` `/baka` `/bleh` |
 | 🍡 **Levels & economy** | `/rank` `/leaderboard` `/balance` `/daily` `/work` `/pay` `/slots` |
 | 🧰 **Utility** | `/help` `/ping` `/serverinfo` `/userinfo` `/avatar` `/poll` `/remind` |
 | 🔨 **Moderation** | `/ban` `/unban` `/kick` `/timeout` `/untimeout` `/warn` `/warnings` `/purge` `/slowmode` |
