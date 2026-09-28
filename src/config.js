@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const EXIT = require('./exitCodes');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config.json');
 
@@ -61,7 +62,7 @@ function loadConfig() {
     return merge(DEFAULTS, JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')));
   } catch (err) {
     console.error(`[config] config.json has a typo in it >_< (${err.message})`);
-    process.exit(1);
+    process.exit(EXIT.NEEDS_FIXING);
   }
 }
 

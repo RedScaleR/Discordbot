@@ -1,3 +1,5 @@
+const { version } = require('../../package.json');
+
 // Free anime GIF sites (no API key needed). If one fails, Mochi tries the next one that has the category.
 const PROVIDERS = [
   {
@@ -22,7 +24,7 @@ const PROVIDERS = [
 
 const TIMEOUT = 4000;
 // Firewalls often block anything calling itself a "bot", so this just names the app.
-const USER_AGENT = 'Mochi/1.3 (Discord app)';
+const USER_AGENT = `Mochi/${version} (Discord app)`;
 
 async function fromProvider(provider, category) {
   const response = await fetch(provider.url(category), {

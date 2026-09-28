@@ -14,6 +14,12 @@ Moderation, games, levels, coins, welcome messages, role buttons, logging and au
 
 Put Mochi's role near the top of **Server Settings → Roles** so it can moderate people and hand out roles.
 
+## Start Mochi with Windows
+
+After running `start.bat` once, double-click **`autostart-on.bat`**. From then on Mochi starts by itself in a minimized window whenever you log in, and restarts itself if it stops unexpectedly (like when the internet isn't connected yet right after boot). Close its window to stop it. Double-click **`autostart-off.bat`** to turn this off.
+
+Mochi won't run twice: if it's already running and you open `start.bat`, it just tells you so.
+
 ## Settings (`config.json`)
 
 The easiest way to change these is the dashboard's **Settings** tab. To edit the file by hand instead, right-click a channel or role → **Copy ID** (turn on **Developer Mode** in Discord's Advanced settings first). Leave an ID empty (`""`) to turn that feature off. Restart Mochi after editing the file by hand.
@@ -54,7 +60,7 @@ If port 3000 is taken, add `DASHBOARD_PORT=3001` to `.env`. Message and command 
 | 🔨 **Moderation** | `/ban` `/unban` `/kick` `/timeout` `/untimeout` `/warn` `/warnings` `/purge` `/slowmode` |
 | ⚙️ **Admin** | `/rolepanel` posts buttons people click to give themselves roles |
 
-`/hug` `/pat` `/boop` `/highfive` come with a random anime GIF from [nekos.best](https://nekos.best) (free, no setup). If the site is down they still work, just without the GIF.
+`/hug` `/pat` `/boop` `/highfive` come with a random anime GIF from [nekos.best](https://nekos.best), with [nekos.life](https://nekos.life) and [purrbot](https://purrbot.site) as backups (free, no setup). If they're all unreachable the commands still work, just without the GIF.
 Moderation and admin commands only show up for people with the matching permissions.
 Data (XP, coins, warnings, reminders) lives in `data/mochi.db`. Back it up if you care about it!
 

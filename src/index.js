@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const EXIT = require('./exitCodes');
 
 const ENV_PATH = path.join(__dirname, '..', '.env');
 if (fs.existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH);
@@ -7,7 +8,7 @@ if (fs.existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH);
 const token = process.env.DISCORD_TOKEN?.trim();
 if (!token) {
   console.error("I need a bot token to wake up >_<  Put it in the .env file like this:  DISCORD_TOKEN=your-token-here");
-  process.exit(1);
+  process.exit(EXIT.NEEDS_FIXING);
 }
 
 const { Client, Events, GatewayIntentBits, GatewayCloseCodes, Partials } = require('discord.js');
@@ -31,7 +32,6 @@ const client = new Client({
 
 client.commands = loadCommands();
 client.dashboardPort = Number(process.env.DASHBOARD_PORT) || 3000;
-startDashboard(client, client.dashboardPort);
 
 const eventsDir = path.join(__dirname, 'events');
 for (const file of fs.readdirSync(eventsDir).filter((name) => name.endsWith('.js'))) {
@@ -66,11 +66,36 @@ client.on(Events.ShardDisconnect, ({ code }) => {
   } else {
     return;
   }
-  process.exit(1);
+  process.exit(EXIT.NEEDS_FIXING);
 });
 
-client.login(token).catch((err) => {
-  if (err.code === 'TokenInvalid') console.error(BAD_TOKEN_HINT);
-  else console.error("Couldn't log in :<", err);
-  process.exit(1);
+/** Two copies of Mochi would answer every command twice, so check whether one's already running. */
+async function isAlreadyRunning(port) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/status`, { signal: AbortSignal.timeout(2000) });
+    const status = await response.json();
+    return typeof status.version === 'string' && 'ready' in status;
+  } catch {
+    return false;
+  }
+}
+
+async function main() {
+  if (await isAlreadyRunning(client.dashboardPort)) {
+    console.error(
+      `Mochi is already running! Look for its window in your taskbar, or open http://localhost:${client.dashboardPort} :3`,
+    );
+    process.exit(EXIT.ALREADY_RUNNING);
+  }
+  startDashboard(client, client.dashboardPort);
+  await client.login(token);
+}
+
+main().catch((err) => {
+  if (err.code === 'TokenInvalid') {
+    console.error(BAD_TOKEN_HINT);
+    process.exit(EXIT.NEEDS_FIXING);
+  }
+  console.error(`Couldn't log in :< (${err.code ?? err.message}). Is your internet connected?`);
+  process.exit(EXIT.RESTART);
 });
