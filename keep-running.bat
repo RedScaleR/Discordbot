@@ -6,7 +6,17 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 if not exist .env goto :setup_needed
-if not exist node_modules\discord.js goto :setup_needed
+
+:deps
+rem Installs anything missing, like new packages that came with an update.
+node tools\check-deps.js
+if not errorlevel 1 goto :run
+call npm install --omit=dev
+if not errorlevel 1 goto :run
+echo.
+echo Couldn't install Mochi's stuff, maybe the internet isn't connected yet. Trying again in 30 seconds...
+timeout /t 30 /nobreak >nul
+goto :deps
 
 :run
 node --disable-warning=ExperimentalWarning src\index.js

@@ -8,7 +8,15 @@ const MY_COMMANDS_DIR = path.join(__dirname, '..', 'my-commands');
 
 function loadFolder(commands, folder, category) {
   for (const file of fs.readdirSync(folder).filter((name) => name.endsWith('.js'))) {
-    for (const command of [require(path.join(folder, file))].flat()) {
+    let exported;
+    try {
+      exported = require(path.join(folder, file));
+    } catch (err) {
+      // One broken command shouldn't stop the whole bot.
+      console.error(`[commands] Skipped ${path.join(folder, file)} because it failed to load: ${err.message.split('\n')[0]}`);
+      continue;
+    }
+    for (const command of [exported].flat()) {
       const { name } = command.data;
       if (commands.has(name)) {
         console.warn(`[commands] Two commands are called /${name}. Skipping the one in ${path.join(folder, file)}.`);

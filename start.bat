@@ -20,8 +20,10 @@ if not defined TOKEN goto :no_token
 echo Saved to .env :3
 
 :install
-if exist node_modules\discord.js goto :run
-echo Installing Mochi's stuff, only happens once...
+rem Installs anything missing, like new packages that came with an update.
+node tools\check-deps.js
+if not errorlevel 1 goto :run
+echo Installing Mochi's stuff...
 call npm install --omit=dev
 if errorlevel 1 goto :install_failed
 

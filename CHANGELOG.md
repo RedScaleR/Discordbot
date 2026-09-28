@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1
+
+- start.bat and keep-running.bat check Mochi's packages on every start and install anything missing (fixes "Cannot find module '@napi-rs/canvas'")
+- The updater installs packages more reliably on Windows and double-checks they're all there
+- A command that fails to load is skipped with a message instead of crashing Mochi
+
 ## 1.6.0
 
 - Shop: add items, badges and roles in the dashboard's new Shop tab, then people /shop, /buy and check their /inventory

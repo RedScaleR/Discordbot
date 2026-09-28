@@ -27,8 +27,9 @@ if [ ! -f .env ]; then
   echo "Saved to .env :3"
 fi
 
-if [ ! -d node_modules/discord.js ]; then
-  echo "Installing Mochi's stuff (only happens once)..."
+# Installs anything missing, like new packages that came with an update.
+if ! node tools/check-deps.js; then
+  echo "Installing Mochi's stuff..."
   npm install --omit=dev || { echo "Install failed :<"; read -rp "Press Enter to close..."; exit 1; }
 fi
 

@@ -4,7 +4,6 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 if not exist .env goto :setup_needed
-if not exist node_modules\discord.js goto :setup_needed
 
 rem Adds a shortcut to keep-running.bat in your Startup folder, set to open minimized.
 set "MOCHI_DIR=%~dp0"

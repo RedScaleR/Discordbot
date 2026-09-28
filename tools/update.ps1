@@ -152,8 +152,19 @@ try {
     Say 'Installing anything new Mochi needs...'
     Push-Location $MochiDir
     try {
-        & npm install --omit=dev --no-audit --no-fund
-        if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
+        # npm prints warnings on the error stream, which older PowerShell can mistake for a
+        # failure, so let it write straight to the window instead.
+        $ErrorActionPreference = 'Continue'
+        if ($env:OS -eq 'Windows_NT') {
+            cmd /c 'npm install --omit=dev --no-audit --no-fund'
+        } else {
+            npm install --omit=dev --no-audit --no-fund
+        }
+        $installed = $LASTEXITCODE -eq 0
+        & node (Join-Path $MochiDir 'tools/check-deps.js')
+        $installed = $installed -and $LASTEXITCODE -eq 0
+        $ErrorActionPreference = 'Stop'
+        if (-not $installed) { throw 'npm install failed' }
     } finally {
         Pop-Location
     }
