@@ -3,6 +3,8 @@ const config = require('../config');
 const { findBannedWord, hasInvite, SpamTracker } = require('../util/automod');
 const { sendLog } = require('../util/logger');
 const { kao, truncate } = require('../util/cute');
+const { record } = require('../activity');
+const db = require('../database');
 
 const spam = new SpamTracker();
 setInterval(() => spam.sweep(60_000), 60_000).unref();
@@ -67,6 +69,7 @@ async function runAutomod(message, { edited = false } = {}) {
 
   const problem = findProblem(message, { countSpam: !edited });
   if (!problem) return false;
+  db.bumpStat(message.guildId, 'automod');
 
   if (problem.spam) {
     await deleteSpamBurst(message);
@@ -88,6 +91,12 @@ async function runAutomod(message, { edited = false } = {}) {
     .send(`${message.author}, ${problem.notice} ${kao('angry')}${timedOut ? ` (timed out for ${minutes} min)` : ''}`)
     .catch(() => null);
   if (warning) setTimeout(() => warning.delete().catch(() => {}), 8000).unref();
+
+  record(
+    message.guildId,
+    'automod',
+    `Auto-mod removed a message from ${message.author.username} (${problem.reason})${timedOut ? `, timed out ${minutes} min` : ''}`,
+  );
 
   await sendLog(message.guild, {
     title: '🛡️ Automod',

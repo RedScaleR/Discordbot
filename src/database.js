@@ -40,7 +40,28 @@ db.exec(`
     remind_at  INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS reminders_by_time ON reminders (remind_at);
+
+  -- Daily counters for the dashboard charts. "day" is YYYY-MM-DD in the PC's local time.
+  CREATE TABLE IF NOT EXISTS daily_stats (
+    guild_id TEXT    NOT NULL,
+    day      TEXT    NOT NULL,
+    messages INTEGER NOT NULL DEFAULT 0,
+    commands INTEGER NOT NULL DEFAULT 0,
+    joins    INTEGER NOT NULL DEFAULT 0,
+    leaves   INTEGER NOT NULL DEFAULT 0,
+    automod  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, day)
+  );
+
+  CREATE TABLE IF NOT EXISTS command_stats (
+    guild_id TEXT    NOT NULL,
+    command  TEXT    NOT NULL,
+    uses     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, command)
+  );
 `);
+
+const STAT_FIELDS = ['messages', 'commands', 'joins', 'leaves', 'automod'];
 
 const stmt = {
   ensureMember: db.prepare('INSERT INTO members (guild_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING'),
@@ -73,7 +94,49 @@ const stmt = {
   dueReminders: db.prepare('SELECT * FROM reminders WHERE remind_at <= ? ORDER BY remind_at'),
   countReminders: db.prepare('SELECT COUNT(*) AS count FROM reminders WHERE user_id = ?'),
   deleteReminder: db.prepare('DELETE FROM reminders WHERE id = ?'),
+
+  setXp: db.prepare('UPDATE members SET xp = ? WHERE guild_id = ? AND user_id = ?'),
+  setCoins: db.prepare('UPDATE members SET coins = ? WHERE guild_id = ? AND user_id = ?'),
+  totals: db.prepare('SELECT COALESCE(SUM(coins), 0) AS coins, COALESCE(SUM(xp), 0) AS xp FROM members WHERE guild_id = ?'),
+  warningCounts: db.prepare(`
+    SELECT user_id, COUNT(*) AS count FROM warnings WHERE guild_id = ? GROUP BY user_id`),
+  totalWarnings: db.prepare('SELECT COUNT(*) AS count FROM warnings WHERE guild_id = ?'),
+  recentWarnings: db.prepare('SELECT * FROM warnings WHERE guild_id = ? ORDER BY id DESC LIMIT ?'),
+  allMembers: db.prepare('SELECT * FROM members WHERE guild_id = ?'),
+  bumpStat: Object.fromEntries(
+    STAT_FIELDS.map((field) => [
+      field,
+      db.prepare(`
+        INSERT INTO daily_stats (guild_id, day, ${field}) VALUES (?, ?, 1)
+        ON CONFLICT (guild_id, day) DO UPDATE SET ${field} = ${field} + 1`),
+    ]),
+  ),
+  statsSince: db.prepare('SELECT * FROM daily_stats WHERE guild_id = ? AND day >= ? ORDER BY day'),
+  bumpCommand: db.prepare(`
+    INSERT INTO command_stats (guild_id, command, uses) VALUES (?, ?, 1)
+    ON CONFLICT (guild_id, command) DO UPDATE SET uses = uses + 1`),
+  topCommands: db.prepare('SELECT command, uses FROM command_stats WHERE guild_id = ? ORDER BY uses DESC LIMIT ?'),
 };
+
+/** A date as YYYY-MM-DD in local time. */
+function dayKey(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Daily counters for the last `days` days (oldest first), with empty days filled in as zeros. */
+function recentStats(guildId, days) {
+  const keys = Array.from({ length: days }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - 1 - i));
+    return dayKey(date);
+  });
+  const rows = new Map(stmt.statsSince.all(guildId, keys[0]).map((row) => [row.day, row]));
+  return keys.map((day) => {
+    const row = rows.get(day);
+    return { day, ...Object.fromEntries(STAT_FIELDS.map((field) => [field, row?.[field] ?? 0])) };
+  });
+}
 
 function transaction(fn) {
   db.exec('BEGIN');
@@ -143,4 +206,24 @@ module.exports = {
   dueReminders: (now = Date.now()) => stmt.dueReminders.all(now),
   countReminders: (userId) => stmt.countReminders.get(userId).count,
   deleteReminder: (id) => stmt.deleteReminder.run(id),
+
+  /** Adds one to today's counter, like bumpStat(guildId, 'messages'). */
+  bumpStat: (guildId, field) => stmt.bumpStat[field].run(guildId, dayKey()),
+  bumpCommand: (guildId, command) => stmt.bumpCommand.run(guildId, command),
+  recentStats,
+  topCommands: (guildId, limit = 8) => stmt.topCommands.all(guildId, limit),
+  totals: (guildId) => stmt.totals.get(guildId),
+  totalWarnings: (guildId) => stmt.totalWarnings.get(guildId).count,
+  warningCounts: (guildId) => new Map(stmt.warningCounts.all(guildId).map((row) => [row.user_id, row.count])),
+  recentWarnings: (guildId, limit = 10) => stmt.recentWarnings.all(guildId, limit),
+  /** Every stored member row for a server, by user ID (read-only, unlike getMember). */
+  allMembers: (guildId) => new Map(stmt.allMembers.all(guildId).map((row) => [row.user_id, row])),
+  setXp: (guildId, userId, xp) => {
+    stmt.ensureMember.run(guildId, userId);
+    stmt.setXp.run(xp, guildId, userId);
+  },
+  setCoins: (guildId, userId, coins) => {
+    stmt.ensureMember.run(guildId, userId);
+    stmt.setCoins.run(coins, guildId, userId);
+  },
 };

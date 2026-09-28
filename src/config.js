@@ -65,4 +65,20 @@ function loadConfig() {
   }
 }
 
-module.exports = loadConfig();
+const config = loadConfig();
+
+/**
+ * Writes new settings to config.json and applies them right away. The rest of the bot reads
+ * config.x when it needs it, so swapping the values in place means no restart is needed.
+ */
+function save(next) {
+  const temp = `${CONFIG_PATH}.tmp`;
+  fs.writeFileSync(temp, `${JSON.stringify(next, null, 2)}\n`);
+  fs.renameSync(temp, CONFIG_PATH);
+  for (const key of Object.keys(next)) config[key] = next[key];
+}
+
+// Hidden from JSON.stringify and Object.keys, so it never ends up in config.json.
+Object.defineProperty(config, 'save', { value: save });
+
+module.exports = config;

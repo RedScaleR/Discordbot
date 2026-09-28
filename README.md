@@ -16,7 +16,7 @@ Put Mochi's role near the top of **Server Settings → Roles** so it can moderat
 
 ## Settings (`config.json`)
 
-Right-click a channel or role → **Copy ID** (turn on **Developer Mode** in Discord's Advanced settings first). Leave an ID empty (`""`) to turn that feature off. Restart Mochi after editing.
+The easiest way to change these is the dashboard's **Settings** tab. To edit the file by hand instead, right-click a channel or role → **Copy ID** (turn on **Developer Mode** in Discord's Advanced settings first). Leave an ID empty (`""`) to turn that feature off. Restart Mochi after editing the file by hand.
 
 | Setting | What it does |
 | --- | --- |
@@ -32,6 +32,17 @@ Right-click a channel or role → **Copy ID** (turn on **Developer Mode** in Dis
 | `automod.maxMentions` | Pings allowed in one message before it's deleted and the sender is timed out |
 | `automod.spam` | `maxMessages` within `perSeconds` counts as spam and gives a `timeoutMinutes` timeout |
 | `automod.exemptRoleIds` / `exemptChannelIds` | Roles and channels auto-mod ignores (people with Manage Messages are always ignored) |
+
+## Dashboard
+
+While Mochi is running, open **http://localhost:3000** in your browser:
+
+- **Overview:** members, messages and commands today, a 14-day activity chart, top commands, leaderboards, recent warnings and a live activity feed
+- **Members:** search anyone, change their XP or coins, remove warnings
+- **Settings:** everything in `config.json` with dropdowns for channels and roles. Changes apply instantly, no restart
+
+It only works on the PC running Mochi, so nobody else can open it. Every change made there is posted to your log channel.
+If port 3000 is taken, add `DASHBOARD_PORT=3001` to `.env`. Message and command counts start from when you first run v1.3.0.
 
 ## Commands
 

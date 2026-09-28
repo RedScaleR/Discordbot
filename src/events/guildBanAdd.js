@@ -1,5 +1,6 @@
 const { Events, AuditLogEvent } = require('discord.js');
 const { sendLog, wasExpected, findAuditEntry } = require('../util/logger');
+const { record } = require('../activity');
 
 module.exports = {
   name: Events.GuildBanAdd,
@@ -9,6 +10,7 @@ module.exports = {
     if (wasExpected(`ban:${ban.guild.id}:${ban.user.id}`)) return;
 
     const entry = await findAuditEntry(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
+    record(ban.guild.id, 'mod', `${ban.user.username} was banned${entry?.executor ? ` by ${entry.executor.username}` : ''}`);
     await sendLog(ban.guild, {
       title: '🔨 Member banned',
       color: 'red',

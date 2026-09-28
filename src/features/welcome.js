@@ -2,6 +2,8 @@ const { escapeMarkdown, time, TimestampStyles } = require('discord.js');
 const config = require('../config');
 const { cuteEmbed } = require('../util/cute');
 const { sendLog } = require('../util/logger');
+const { record } = require('../activity');
+const db = require('../database');
 
 /** Fills in {user}, {username}, {server} and {count} in a welcome/goodbye message. */
 function fill(template, member) {
@@ -13,6 +15,8 @@ function fill(template, member) {
 }
 
 async function welcome(member) {
+  db.bumpStat(member.guild.id, 'joins');
+  record(member.guild.id, 'join', `${member.user.username} joined the server`);
   const channel = member.guild.channels.cache.get(config.welcome.channelId);
   if (channel?.isTextBased()) {
     await channel
@@ -41,6 +45,8 @@ async function welcome(member) {
 }
 
 async function goodbye(member) {
+  db.bumpStat(member.guild.id, 'leaves');
+  record(member.guild.id, 'leave', `${member.user.username} left the server`);
   const channel = member.guild.channels.cache.get(config.goodbye.channelId);
   if (channel?.isTextBased()) {
     await channel

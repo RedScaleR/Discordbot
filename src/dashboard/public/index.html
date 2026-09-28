@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mochi Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%A1%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img id="bot-avatar" class="avatar avatar-lg" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="" />
+        <div>
+          <h1>Mochi <span class="kao" aria-hidden="true">(◕‿◕)</span></h1>
+          <p id="bot-status" class="status"><span class="dot" aria-hidden="true"></span><span id="bot-status-text">Connecting…</span></p>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+        <button role="tab" id="tab-btn-overview" aria-controls="tab-overview" aria-selected="true">Overview</button>
+        <button role="tab" id="tab-btn-members" aria-controls="tab-members" aria-selected="false" tabindex="-1">Members</button>
+        <button role="tab" id="tab-btn-settings" aria-controls="tab-settings" aria-selected="false" tabindex="-1">Settings</button>
+      </nav>
+      <div class="tools">
+        <label class="guild-picker" hidden>
+          <span class="visually-hidden">Server</span>
+          <select id="guild-picker"></select>
+        </label>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch light or dark mode">🌙</button>
+      </div>
+    </header>
+
+    <div id="waking" class="waking" hidden>
+      <p class="kao-big" aria-hidden="true">(－_－) zzZ</p>
+      <p id="waking-text">Mochi is waking up… this page will refresh itself.</p>
+    </div>
+
+    <main id="main" hidden>
+      <!-- Overview -->
+      <section id="tab-overview" role="tabpanel" aria-labelledby="tab-btn-overview">
+        <div id="kpis" class="kpis"></div>
+
+        <div class="grid">
+          <figure class="card chart-card span-2" id="messages-card">
+            <div class="card-head">
+              <div>
+                <h2>Messages per day</h2>
+                <p class="sub">Last 14 days</p>
+              </div>
+              <button type="button" class="link-btn" id="messages-view-toggle" aria-pressed="false">Show as table</button>
+            </div>
+            <div class="chart" id="messages-chart"></div>
+            <div class="table-wrap" id="messages-table" hidden></div>
+          </figure>
+
+          <section class="card feed-card" aria-labelledby="feed-title">
+            <div class="card-head">
+              <h2 id="feed-title">Live activity</h2>
+              <span id="live-badge" class="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">Connecting</span></span>
+            </div>
+            <ol id="feed" class="feed" aria-live="polite"></ol>
+          </section>
+
+          <figure class="card" id="commands-card">
+            <div class="card-head">
+              <div>
+                <h2>Most used commands</h2>
+                <p class="sub">All time</p>
+              </div>
+            </div>
+            <div id="commands-chart" class="hbars"></div>
+          </figure>
+
+          <section class="card" aria-labelledby="top-xp-title">
+            <div class="card-head"><h2 id="top-xp-title">Top chatters</h2></div>
+            <ol id="top-xp" class="ranking"></ol>
+          </section>
+
+          <section class="card" aria-labelledby="top-coins-title">
+            <div class="card-head"><h2 id="top-coins-title">Richest</h2></div>
+            <ol id="top-coins" class="ranking"></ol>
+          </section>
+
+          <section class="card span-3" aria-labelledby="warnings-title">
+            <div class="card-head"><h2 id="warnings-title">Recent warnings</h2></div>
+            <div id="recent-warnings" class="table-wrap"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Members -->
+      <section id="tab-members" role="tabpanel" aria-labelledby="tab-btn-members" hidden>
+        <div class="members-layout">
+          <div class="card members-list-card">
+            <label class="search">
+              <span class="visually-hidden">Search members</span>
+              <input id="member-search" type="search" placeholder="Search members…" autocomplete="off" />
+            </label>
+            <ul id="member-results" class="member-results"></ul>
+          </div>
+          <div id="member-detail" class="card member-detail">
+            <div class="empty">
+              <p class="kao-big" aria-hidden="true">(｡•ᴗ•｡)</p>
+              <p>Pick someone to see their level, coins and warnings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="tab-settings" role="tabpanel" aria-labelledby="tab-btn-settings" hidden>
+        <p class="settings-intro">Changes apply right away, no restart needed. They're saved to <code>config.json</code>.</p>
+        <form id="settings-form" class="settings-form" novalidate></form>
+        <div id="save-bar" class="save-bar" hidden>
+          <span>You have unsaved changes</span>
+          <button type="button" id="settings-reset" class="btn btn-ghost">Undo</button>
+          <button type="submit" form="settings-form" id="settings-save" class="btn btn-primary">Save changes</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

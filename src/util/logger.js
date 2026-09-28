@@ -1,5 +1,6 @@
 const config = require('../config');
 const { cuteEmbed } = require('./cute');
+const { record } = require('../activity');
 
 /** Sends an embed to the server's log channel (if one is set up in config.json). */
 async function sendLog(guild, embedOptions) {
@@ -15,6 +16,7 @@ async function sendLog(guild, embedOptions) {
 
 /** Logs a moderation action with who did it and why. */
 function logModAction(guild, { action, emoji, target, moderator, reason, extra = [] }) {
+  record(guild.id, 'mod', `${moderator.username}: ${action.toLowerCase()} for ${target.username} (${reason})`);
   return sendLog(guild, {
     title: `${emoji} ${action}`,
     color: 'peach',

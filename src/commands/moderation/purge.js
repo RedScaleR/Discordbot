@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { success, oops } = require('../../util/cute');
 const { sendLog } = require('../../util/logger');
+const { record } = require('../../activity');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -39,6 +40,7 @@ module.exports = {
       ],
     });
     if (deleted.size) {
+      record(interaction.guildId, 'mod', `${interaction.user.username} purged ${deleted.size} messages in #${channel.name}`);
       await sendLog(interaction.guild, {
         title: '🧹 Messages purged',
         color: 'peach',

@@ -2,6 +2,7 @@ const config = require('../config');
 const db = require('../database');
 const { levelFromXp } = require('../util/levels');
 const { cuteEmbed, kao, randomInt } = require('../util/cute');
+const { record } = require('../activity');
 
 /** Gives any reward roles for levels the member has reached but doesn't have yet. */
 async function giveRoleRewards(member, level) {
@@ -36,6 +37,7 @@ async function giveXp(message) {
   const coins = levels.coinsPerLevel * after;
   if (coins) db.addCoins(message.guildId, message.author.id, coins);
   const roles = await giveRoleRewards(message.member, after);
+  record(message.guildId, 'level', `${message.author.username} reached level ${after}`);
 
   const lines = [`${message.author} just reached **level ${after}**! ${kao('happy')}`];
   if (coins) lines.push(`+${coins.toLocaleString()} ${config.economy.currency} level-up bonus`);

@@ -1,5 +1,7 @@
 const { Events, MessageFlags, RESTJSONErrorCodes } = require('discord.js');
 const { oops } = require('../util/cute');
+const { record } = require('../activity');
+const db = require('../database');
 
 async function reportError(interaction, label, err) {
   console.error(`[${label}]`, err);
@@ -21,6 +23,9 @@ module.exports = {
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);
       if (!command) return;
+      db.bumpStat(interaction.guildId, 'commands');
+      db.bumpCommand(interaction.guildId, interaction.commandName);
+      record(interaction.guildId, 'command', `${interaction.user.username} used /${interaction.commandName} in #${interaction.channel?.name ?? 'unknown'}`);
       try {
         await command.execute(interaction);
       } catch (err) {

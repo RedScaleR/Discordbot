@@ -33,8 +33,14 @@ module.exports = {
 
     client.user.setPresence({ activities: [{ name: 'Mochi', state: 'being cute in chat :3', type: ActivityType.Custom }] });
 
+    console.log(`  Your dashboard: http://localhost:${client.dashboardPort}  (open it in your browser)\n`);
+
     if (!client.guilds.cache.size) console.log("  I'm not in any servers yet! Use the link above to add me :3\n");
-    for (const guild of client.guilds.cache.values()) await registerCommands(guild, client.commands);
+    for (const guild of client.guilds.cache.values()) {
+      await registerCommands(guild, client.commands);
+      // Load everyone once so the dashboard can show names. Mochi keeps the list updated after this.
+      await guild.members.fetch().catch((err) => console.warn(`[members] Couldn't load members of "${guild.name}": ${err.message}`));
+    }
 
     startReminders(client);
   },

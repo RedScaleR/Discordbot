@@ -13,6 +13,7 @@ if (!token) {
 const { Client, Events, GatewayIntentBits, GatewayCloseCodes, Partials } = require('discord.js');
 const { loadCommands } = require('./commandLoader');
 const { db } = require('./database');
+const { startDashboard } = require('./dashboard/server');
 
 const client = new Client({
   intents: [
@@ -29,6 +30,8 @@ const client = new Client({
 });
 
 client.commands = loadCommands();
+client.dashboardPort = Number(process.env.DASHBOARD_PORT) || 3000;
+startDashboard(client, client.dashboardPort);
 
 const eventsDir = path.join(__dirname, 'events');
 for (const file of fs.readdirSync(eventsDir).filter((name) => name.endsWith('.js'))) {
