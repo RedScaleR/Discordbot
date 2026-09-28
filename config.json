@@ -1,0 +1,42 @@
+{
+  "logChannelId": "",
+  "welcome": {
+    "channelId": "",
+    "message": "Welcome to **{server}**, {user}! You're our member #{count} (ﾉ◕ヮ◕)ﾉ✧"
+  },
+  "goodbye": {
+    "channelId": "",
+    "message": "**{username}** left the server... we'll miss you (｡•́︿•̀｡)"
+  },
+  "levels": {
+    "enabled": true,
+    "announceChannelId": "",
+    "xpMin": 15,
+    "xpMax": 25,
+    "cooldownSeconds": 60,
+    "coinsPerLevel": 25,
+    "roleRewards": {}
+  },
+  "economy": {
+    "currency": "🍡",
+    "dailyAmount": 200,
+    "dailyStreakBonus": 25,
+    "workMin": 50,
+    "workMax": 150,
+    "workCooldownMinutes": 60,
+    "triviaReward": 30
+  },
+  "automod": {
+    "enabled": true,
+    "bannedWords": [],
+    "blockInvites": true,
+    "maxMentions": 5,
+    "spam": {
+      "maxMessages": 6,
+      "perSeconds": 5,
+      "timeoutMinutes": 5
+    },
+    "exemptRoleIds": [],
+    "exemptChannelIds": []
+  }
+}

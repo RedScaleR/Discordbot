@@ -1,0 +1,17 @@
+{
+  "name": "mochi-bot",
+  "version": "1.0.0",
+  "description": "Mochi, a cute and playful Discord bot :3",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/index.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.27.0"
+  }
+}
