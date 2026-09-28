@@ -2,6 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { cuteEmbed, oops, pick, kao } = require('../../util/cute');
 const config = require('../../config');
 const db = require('../../database');
+const { placeBet } = require('../../util/bets');
 
 const SYMBOLS = ['🍡', '🍓', '🍒', '🍋', '⭐', '💎'];
 
@@ -22,13 +23,8 @@ module.exports = {
     const bet = interaction.options.getInteger('bet');
     const { currency } = config.economy;
 
-    if (!db.takeCoins(interaction.guildId, interaction.user.id, bet)) {
-      const { coins } = db.getMember(interaction.guildId, interaction.user.id);
-      return interaction.reply({
-        embeds: [oops(`You only have **${coins.toLocaleString()} ${currency}** to bet`)],
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+    const problem = placeBet(interaction, bet);
+    if (problem) return interaction.reply({ embeds: [oops(problem)], flags: MessageFlags.Ephemeral });
 
     const reels = [pick(SYMBOLS), pick(SYMBOLS), pick(SYMBOLS)];
     const times = multiplier(reels);

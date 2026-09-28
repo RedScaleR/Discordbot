@@ -48,7 +48,8 @@ The easiest way to change these is the dashboard's **Settings** tab. To edit the
 While Mochi is running, open **http://localhost:3000** in your browser:
 
 - **Overview:** members, messages and commands today, a 14-day activity chart, top commands, leaderboards, recent warnings and a live activity feed
-- **Members:** search anyone, change their XP or coins, remove warnings
+- **Members:** search anyone, change their XP or coins, see their inventory, remove warnings
+- **Shop:** add items, badges and roles people can buy with coins
 - **Settings:** everything in `config.json` with dropdowns for channels and roles. Changes apply instantly, no restart
 
 It only works on the PC running Mochi, so nobody else can open it. Every change made there is posted to your log channel.
@@ -78,7 +79,9 @@ Personalities: cute (default), sassy, sleepy, chaotic gremlin, wise sage, tsunde
 | 🤗 **Actions** | `/hug` `/pat` `/boop` `/highfive` `/cuddle` `/wave` `/bonk` `/slap` `/tickle` `/bite` `/feed` `/handhold` `/emote` |
 | 💋 **Flirty** | `/kiss` `/peck` `/blowkiss` `/kabedon` `/lappillow` `/carry` |
 | 💥 **Chaos** | `/punch` `/dropkick` `/yeet` `/shoot` `/tableflip` `/baka` `/bleh` |
-| 🍡 **Levels & economy** | `/rank` `/leaderboard` `/balance` `/daily` `/work` `/pay` `/slots` |
+| 🍡 **Levels & economy** | `/rank` `/profile` `/leaderboard` `/balance` `/daily` `/work` `/pay` |
+| 🛍️ **Shop** | `/shop` `/buy` `/inventory` (add items in the dashboard's **Shop** tab) |
+| 🎰 **Betting** | `/slots` `/blackjack` `/coinflip` (with a bet) `/lottery buy` `/lottery info` |
 | 🧰 **Utility** | `/help` `/ping` `/serverinfo` `/userinfo` `/avatar` `/poll` `/remind` |
 | 🔨 **Moderation** | `/ban` `/unban` `/kick` `/timeout` `/untimeout` `/warn` `/warnings` `/purge` `/slowmode` |
 | ⚙️ **Admin** | `/rolepanel` posts buttons people click to give themselves roles |

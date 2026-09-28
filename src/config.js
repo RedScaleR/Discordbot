@@ -32,6 +32,11 @@ const DEFAULTS = {
     workMax: 150,
     workCooldownMinutes: 60,
     triviaReward: 30,
+    maxBet: 0,
+    lotteryTicketPrice: 50,
+    lotteryDrawDay: 'sunday',
+    lotteryDrawHour: 20,
+    lotteryChannelId: '',
   },
   automod: {
     enabled: true,

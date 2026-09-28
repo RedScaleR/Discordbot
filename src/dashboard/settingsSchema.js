@@ -66,6 +66,25 @@ const SECTIONS = [
       { path: 'economy.workMax', type: 'int', min: 0, max: 1000000, label: 'Most /work coins' },
       { path: 'economy.workCooldownMinutes', type: 'int', min: 0, max: 10080, label: 'Minutes between /work' },
       { path: 'economy.triviaReward', type: 'int', min: 0, max: 1000000, label: '/trivia prize' },
+      { path: 'economy.maxBet', type: 'int', min: 0, max: 100000000, label: 'Biggest bet allowed', help: 'For /slots, /blackjack and /coinflip. 0 means no limit.' },
+      { path: 'economy.lotteryTicketPrice', type: 'int', min: 1, max: 1000000, label: 'Lottery ticket price' },
+      {
+        path: 'economy.lotteryDrawDay',
+        type: 'select',
+        label: 'Lottery draw day',
+        options: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((day) => ({
+          value: day,
+          label: day[0].toUpperCase() + day.slice(1),
+        })),
+      },
+      { path: 'economy.lotteryDrawHour', type: 'int', min: 0, max: 23, label: 'Lottery draw hour', help: '0 to 23, in your PC\'s time. 20 means 8 PM.' },
+      {
+        path: 'economy.lotteryChannelId',
+        type: 'channel',
+        label: 'Lottery channel',
+        emptyLabel: 'Where the first ticket was bought',
+        help: 'Where the winner is announced.',
+      },
     ],
   },
   {

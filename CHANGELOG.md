@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0
+
+- Shop: add items, badges and roles in the dashboard's new Shop tab, then people /shop, /buy and check their /inventory
+- /profile draws a cute profile card with your level, rank, coins, streak and badges
+- /blackjack with hit, stand and double
+- /coinflip can take a bet: call heads or tails to double your coins
+- Weekly /lottery: buy tickets, one lucky winner takes the whole pot
+- Set a biggest-bet limit and the lottery day, hour and channel in Settings → Economy
+
 ## 1.5.2
 
 - Flirty pack: /kiss /peck /blowkiss /kabedon /lappillow /carry

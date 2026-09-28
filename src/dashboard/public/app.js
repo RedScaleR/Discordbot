@@ -6,8 +6,8 @@ const $ = (selector) => document.querySelector(selector);
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DEFAULT_AVATAR = 'https://cdn.discordapp.com/embed/avatars/0.png';
 const MEDALS = ['🥇', '🥈', '🥉'];
-const FEED_ICONS = { command: '✨', automod: '🛡️', join: '📥', leave: '📤', level: '🎉', mod: '🔨', dashboard: '🎛️', ai: '🤖' };
-const TABS = ['overview', 'members', 'settings'];
+const FEED_ICONS = { command: '✨', automod: '🛡️', join: '📥', leave: '📤', level: '🎉', mod: '🔨', dashboard: '🎛️', ai: '🤖', shop: '🛍️', lottery: '🎟️' };
+const TABS = ['overview', 'members', 'shop', 'settings'];
 
 const state = {
   guildId: null,
@@ -171,6 +171,7 @@ function selectTab(name, { focus = false } = {}) {
   if (name === 'overview') loadOverview();
   if (name === 'members' && !$('#member-results').children.length) searchMembers();
   if (name === 'settings' && !state.settings) loadSettings();
+  if (name === 'shop') loadShop();
 }
 
 function setupTabs() {
@@ -677,6 +678,10 @@ function renderMemberDetail(member) {
       el('div', {}, el('span', { className: 'field-label', text: 'Daily streak' }), el('p', { text: `🔥 ${plural(member.streak, 'day')}` })),
     ),
     save,
+    el('h3', { className: 'section-title' }, el('span', { text: `Inventory (${member.inventory.length})` })),
+    member.inventory.length
+      ? el('div', { className: 'chips' }, member.inventory.map((item) => el('span', { className: 'chip chip-static', text: `${item.emoji} ${item.name}${item.quantity > 1 ? ` ×${item.quantity}` : ''}` })))
+      : el('p', { className: 'sub', text: 'Nothing bought yet.' }),
     el('h3', { className: 'section-title' }, el('span', { text: `Warnings (${member.warningList.length})` }), member.warningList.length ? clearAll : null),
     warnings,
   );
@@ -1060,6 +1065,142 @@ async function saveSettings(event) {
   }
 }
 
+// ---------- Shop ----------
+
+const KIND_NAMES = { item: 'Item', badge: 'Badge', role: 'Role' };
+
+async function loadShop() {
+  try {
+    state.shop = await api('/api/shop');
+  } catch (err) {
+    return toast(err.message, true);
+  }
+  renderShopRoles();
+  renderShopItems();
+}
+
+function renderShopRoles() {
+  const select = $('#item-role');
+  const current = select.value;
+  select.replaceChildren(
+    el('option', { value: '', text: 'Pick a role…' }),
+    ...state.shop.roles.map((role) =>
+      el('option', { value: role.id, disabled: Boolean(role.problem), text: role.problem ? `@ ${role.name} (${role.problem})` : `@ ${role.name}` }),
+    ),
+  );
+  select.value = current;
+}
+
+function renderShopItems() {
+  const container = $('#shop-items');
+  const { items, currency } = state.shop;
+  if (!items.length) {
+    container.replaceChildren(el('p', { className: 'empty', text: 'The shop is empty. Add something on the left! :3' }));
+    return;
+  }
+  const roleName = (id) => state.shop.roles.find((role) => role.id === id)?.name ?? 'deleted role';
+  container.replaceChildren(
+    el(
+      'table',
+      {},
+      el('thead', {}, el('tr', {}, ...['Item', 'Type', 'Price', 'Stock', 'Sold', ''].map((h, i) => el('th', { className: [2, 3, 4].includes(i) ? 'num' : '', text: h })))),
+      el(
+        'tbody',
+        {},
+        items.map((item) =>
+          el(
+            'tr',
+            {},
+            el('td', {}, el('strong', { text: `${item.emoji} ${item.name}` }), item.description ? el('div', { className: 'sub', text: item.description }) : null),
+            el('td', { text: item.kind === 'role' ? `Role · @${roleName(item.roleId)}` : KIND_NAMES[item.kind] }),
+            el('td', { className: 'num', text: `${number.format(item.price)} ${currency}` }),
+            el('td', { className: 'num', text: item.stock === null ? '∞' : number.format(item.stock) }),
+            el('td', { className: 'num', text: number.format(item.sold) }),
+            el(
+              'td',
+              { className: 'row-actions' },
+              el('button', { type: 'button', className: 'btn btn-ghost btn-small', text: 'Edit', onClick: () => editShopItem(item) }),
+              el('button', {
+                type: 'button',
+                className: 'btn btn-danger',
+                text: 'Remove',
+                onClick: async () => {
+                  if (!confirm(`Remove ${item.name} from the shop? People who bought it keep it.`)) return;
+                  try {
+                    state.shop = await api(`/api/shop/${item.id}`, { method: 'DELETE' });
+                    renderShopItems();
+                    toast(`${item.name} removed`);
+                  } catch (err) {
+                    toast(err.message, true);
+                  }
+                },
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function shopFormValues() {
+  const stock = $('#item-stock').value.trim();
+  return {
+    emoji: $('#item-emoji').value,
+    name: $('#item-name').value,
+    description: $('#item-description').value,
+    price: $('#item-price').valueAsNumber,
+    stock: stock === '' ? null : Number(stock),
+    kind: $('#item-kind').value,
+    roleId: $('#item-role').value,
+  };
+}
+
+function resetShopForm() {
+  state.editingItem = null;
+  $('#shop-form').reset();
+  $('#item-role-field').hidden = true;
+  $('#shop-form-title').textContent = 'Add something to the shop';
+  $('#shop-submit').textContent = 'Add to shop';
+  $('#shop-cancel').hidden = true;
+  $('#shop-form-error').hidden = true;
+}
+
+function editShopItem(item) {
+  state.editingItem = item.id;
+  $('#item-emoji').value = item.emoji;
+  $('#item-name').value = item.name;
+  $('#item-description').value = item.description;
+  $('#item-price').value = item.price;
+  $('#item-stock').value = item.stock ?? '';
+  $('#item-kind').value = item.kind;
+  $('#item-role-field').hidden = item.kind !== 'role';
+  $('#item-role').value = item.roleId ?? '';
+  $('#shop-form-title').textContent = `Editing ${item.name}`;
+  $('#shop-submit').textContent = 'Save changes';
+  $('#shop-cancel').hidden = false;
+  $('#shop-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function submitShopItem(event) {
+  event.preventDefault();
+  const button = $('#shop-submit');
+  button.disabled = true;
+  try {
+    const editing = state.editingItem;
+    const path = editing ? `/api/shop/${editing}` : '/api/shop';
+    state.shop = await api(path, { method: editing ? 'PUT' : 'POST', body: { item: shopFormValues() } });
+    renderShopItems();
+    toast(editing ? 'Saved! :3' : 'Added to the shop! :3');
+    resetShopForm();
+  } catch (err) {
+    $('#shop-form-error').textContent = err.message;
+    $('#shop-form-error').hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 // ---------- Wire it all up ----------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1077,6 +1218,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('#settings-form').addEventListener('submit', saveSettings);
+  $('#shop-form').addEventListener('submit', submitShopItem);
+  $('#shop-cancel').addEventListener('click', resetShopForm);
+  $('#item-kind').addEventListener('change', () => ($('#item-role-field').hidden = $('#item-kind').value !== 'role'));
   $('#settings-reset').addEventListener('click', resetDraft);
   window.addEventListener('beforeunload', (event) => {
     if (state.draft && isDirty()) event.preventDefault();
@@ -1087,6 +1231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.feedLoaded = false;
     state.settings = null;
     state.selectedMember = null;
+    resetShopForm();
     $('#member-results').replaceChildren();
     connectEvents();
     selectTab(state.tab);

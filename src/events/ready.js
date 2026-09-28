@@ -1,6 +1,7 @@
 const { Events, ActivityType, OAuth2Scopes, PermissionFlagsBits } = require('discord.js');
 const { registerCommands } = require('../commandLoader');
 const { startReminders } = require('../features/reminders');
+const { startLottery } = require('../features/lottery');
 const { version } = require('../../package.json');
 
 const INVITE_PERMISSIONS = [
@@ -43,5 +44,6 @@ module.exports = {
     }
 
     startReminders(client);
+    startLottery(client);
   },
 };

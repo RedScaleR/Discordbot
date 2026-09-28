@@ -1,6 +1,6 @@
 {
   "name": "mochi-bot",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Mochi, a cute and playful Discord bot :3",
   "main": "src/index.js",
   "private": true,
@@ -12,6 +12,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.27.0"
+    "@napi-rs/canvas": "^1.0.9",
+    "discord.js": "^14.27.0",
+    "twemoji-colr-font": "^15.0.3"
   }
 }

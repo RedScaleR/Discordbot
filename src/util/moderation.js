@@ -45,7 +45,7 @@ function selfRoleProblem(role) {
   if (role.managed) return `${role} is managed by an integration or bot`;
   if (!role.editable) return `${role} is above my highest role, so I can't give it out`;
   if (DANGEROUS_PERMISSIONS.some((perm) => role.permissions.has(perm, false))) {
-    return `${role} has moderator/admin permissions, which is too dangerous for a button`;
+    return `${role} has moderator/admin permissions, which is too dangerous to hand out`;
   }
   return null;
 }

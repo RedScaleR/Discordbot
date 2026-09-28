@@ -20,6 +20,7 @@
       <nav class="tabs" role="tablist" aria-label="Dashboard sections">
         <button role="tab" id="tab-btn-overview" aria-controls="tab-overview" aria-selected="true">Overview</button>
         <button role="tab" id="tab-btn-members" aria-controls="tab-members" aria-selected="false" tabindex="-1">Members</button>
+        <button role="tab" id="tab-btn-shop" aria-controls="tab-shop" aria-selected="false" tabindex="-1">Shop</button>
         <button role="tab" id="tab-btn-settings" aria-controls="tab-settings" aria-selected="false" tabindex="-1">Settings</button>
       </nav>
       <div class="tools">
@@ -105,6 +106,44 @@
               <p>Pick someone to see their level, coins and warnings.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Shop -->
+      <section id="tab-shop" role="tabpanel" aria-labelledby="tab-btn-shop" hidden>
+        <div class="shop-layout">
+          <form id="shop-form" class="card shop-form" novalidate>
+            <h2 id="shop-form-title">Add something to the shop</h2>
+            <div class="shop-fields">
+              <label class="emoji-field"><span class="field-label">Emoji</span><input id="item-emoji" type="text" maxlength="40" placeholder="🎁" /></label>
+              <label><span class="field-label">Name</span><input id="item-name" type="text" maxlength="50" placeholder="Golden Mochi" required /></label>
+              <label class="wide"><span class="field-label">Description (optional)</span><input id="item-description" type="text" maxlength="200" placeholder="A very shiny snack" /></label>
+              <label><span class="field-label">Price</span><input id="item-price" type="number" min="0" step="1" value="100" required /></label>
+              <label><span class="field-label">Stock</span><input id="item-stock" type="number" min="0" step="1" placeholder="Unlimited" /></label>
+              <label class="wide">
+                <span class="field-label">What is it?</span>
+                <select id="item-kind">
+                  <option value="item">Item (collectible)</option>
+                  <option value="badge">Badge (shows on /profile)</option>
+                  <option value="role">Role (gives a Discord role)</option>
+                </select>
+              </label>
+              <label class="wide" id="item-role-field" hidden>
+                <span class="field-label">Role to sell</span>
+                <select id="item-role"></select>
+                <span class="option-help">Roles with mod or admin powers can't be sold, and Mochi's own role must be above the role.</span>
+              </label>
+            </div>
+            <p id="shop-form-error" class="setting-error" hidden></p>
+            <div class="shop-actions">
+              <button type="submit" class="btn btn-primary" id="shop-submit">Add to shop</button>
+              <button type="button" class="btn btn-ghost" id="shop-cancel" hidden>Cancel</button>
+            </div>
+          </form>
+          <section class="card" aria-labelledby="shop-items-title">
+            <div class="card-head"><h2 id="shop-items-title">In the shop</h2></div>
+            <div id="shop-items" class="table-wrap"></div>
+          </section>
         </div>
       </section>
 

@@ -53,6 +53,43 @@ db.exec(`
     PRIMARY KEY (guild_id, day)
   );
 
+  CREATE TABLE IF NOT EXISTS shop_items (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id    TEXT    NOT NULL,
+    name        TEXT    NOT NULL,
+    emoji       TEXT    NOT NULL DEFAULT '🎁',
+    description TEXT    NOT NULL DEFAULT '',
+    price       INTEGER NOT NULL,
+    kind        TEXT    NOT NULL,             -- item, badge or role
+    role_id     TEXT,                         -- for role items
+    stock       INTEGER,                      -- NULL means unlimited
+    removed     INTEGER NOT NULL DEFAULT 0,   -- removed items stay in people's inventories
+    created_at  INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS inventory (
+    guild_id TEXT    NOT NULL,
+    user_id  TEXT    NOT NULL,
+    item_id  INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, user_id, item_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS lottery_tickets (
+    guild_id TEXT    NOT NULL,
+    user_id  TEXT    NOT NULL,
+    tickets  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, user_id)
+  );
+
+  -- Small bits of per-server state, like when the current lottery round started.
+  CREATE TABLE IF NOT EXISTS meta (
+    guild_id TEXT NOT NULL,
+    key      TEXT NOT NULL,
+    value    TEXT NOT NULL,
+    PRIMARY KEY (guild_id, key)
+  );
+
   CREATE TABLE IF NOT EXISTS command_stats (
     guild_id TEXT    NOT NULL,
     command  TEXT    NOT NULL,
@@ -103,6 +140,44 @@ const stmt = {
   totalWarnings: db.prepare('SELECT COUNT(*) AS count FROM warnings WHERE guild_id = ?'),
   recentWarnings: db.prepare('SELECT * FROM warnings WHERE guild_id = ? ORDER BY id DESC LIMIT ?'),
   allMembers: db.prepare('SELECT * FROM members WHERE guild_id = ?'),
+
+  shopItems: db.prepare(`
+    SELECT i.*, COALESCE((SELECT SUM(quantity) FROM inventory v WHERE v.item_id = i.id), 0) AS sold
+    FROM shop_items i WHERE guild_id = ? AND removed = 0 ORDER BY price, id`),
+  shopItem: db.prepare('SELECT * FROM shop_items WHERE id = ? AND guild_id = ?'),
+  addShopItem: db.prepare(`
+    INSERT INTO shop_items (guild_id, name, emoji, description, price, kind, role_id, stock, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  updateShopItem: db.prepare(`
+    UPDATE shop_items SET name = ?, emoji = ?, description = ?, price = ?, kind = ?, role_id = ?, stock = ?
+    WHERE id = ? AND guild_id = ? AND removed = 0`),
+  removeShopItem: db.prepare('UPDATE shop_items SET removed = 1 WHERE id = ? AND guild_id = ? AND removed = 0'),
+  takeStock: db.prepare('UPDATE shop_items SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL AND stock >= ?'),
+  giveStock: db.prepare('UPDATE shop_items SET stock = stock + ? WHERE id = ? AND stock IS NOT NULL'),
+  addToInventory: db.prepare(`
+    INSERT INTO inventory (guild_id, user_id, item_id, quantity) VALUES (?, ?, ?, ?)
+    ON CONFLICT (guild_id, user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity`),
+  removeFromInventory: db.prepare(`
+    UPDATE inventory SET quantity = quantity - ? WHERE guild_id = ? AND user_id = ? AND item_id = ? AND quantity >= ?`),
+  ownedQuantity: db.prepare('SELECT quantity FROM inventory WHERE guild_id = ? AND user_id = ? AND item_id = ?'),
+  inventory: db.prepare(`
+    SELECT i.id, i.name, i.emoji, i.kind, i.description, i.removed, v.quantity
+    FROM inventory v JOIN shop_items i ON i.id = v.item_id
+    WHERE v.guild_id = ? AND v.user_id = ? AND v.quantity > 0 ORDER BY i.kind, i.name`),
+
+  addTickets: db.prepare(`
+    INSERT INTO lottery_tickets (guild_id, user_id, tickets) VALUES (?, ?, ?)
+    ON CONFLICT (guild_id, user_id) DO UPDATE SET tickets = tickets + excluded.tickets`),
+  ticketsOf: db.prepare('SELECT tickets FROM lottery_tickets WHERE guild_id = ? AND user_id = ?'),
+  allTickets: db.prepare('SELECT user_id, tickets FROM lottery_tickets WHERE guild_id = ? AND tickets > 0'),
+  clearTickets: db.prepare('DELETE FROM lottery_tickets WHERE guild_id = ?'),
+  lotteryGuilds: db.prepare("SELECT guild_id, value FROM meta WHERE key = 'lottery.since'"),
+
+  getMeta: db.prepare('SELECT value FROM meta WHERE guild_id = ? AND key = ?'),
+  setMeta: db.prepare(`
+    INSERT INTO meta (guild_id, key, value) VALUES (?, ?, ?)
+    ON CONFLICT (guild_id, key) DO UPDATE SET value = excluded.value`),
+  deleteMeta: db.prepare('DELETE FROM meta WHERE guild_id = ? AND key = ?'),
   bumpStat: Object.fromEntries(
     STAT_FIELDS.map((field) => [
       field,
@@ -117,6 +192,8 @@ const stmt = {
     ON CONFLICT (guild_id, command) DO UPDATE SET uses = uses + 1`),
   topCommands: db.prepare('SELECT command, uses FROM command_stats WHERE guild_id = ? ORDER BY uses DESC LIMIT ?'),
 };
+
+class SoldOut extends Error {}
 
 /** A date as YYYY-MM-DD in local time. */
 function dayKey(date = new Date()) {
@@ -226,4 +303,56 @@ module.exports = {
     stmt.ensureMember.run(guildId, userId);
     stmt.setCoins.run(coins, guildId, userId);
   },
+
+  shopItems: (guildId) => stmt.shopItems.all(guildId),
+  shopItem: (guildId, id) => stmt.shopItem.get(id, guildId),
+  addShopItem: (guildId, item) =>
+    Number(
+      stmt.addShopItem.run(guildId, item.name, item.emoji, item.description, item.price, item.kind, item.roleId, item.stock, Date.now())
+        .lastInsertRowid,
+    ),
+  updateShopItem: (guildId, id, item) =>
+    stmt.updateShopItem.run(item.name, item.emoji, item.description, item.price, item.kind, item.roleId, item.stock, id, guildId)
+      .changes === 1,
+  removeShopItem: (guildId, id) => stmt.removeShopItem.run(id, guildId).changes === 1,
+  inventory: (guildId, userId) => stmt.inventory.all(guildId, userId),
+  ownedQuantity: (guildId, userId, itemId) => stmt.ownedQuantity.get(guildId, userId, itemId)?.quantity ?? 0,
+  giveItem: (guildId, userId, itemId, quantity) => stmt.addToInventory.run(guildId, userId, itemId, quantity),
+
+  /**
+   * Buys an item in one go: takes the coins, takes stock (if limited) and adds it to the inventory.
+   * Returns 'ok', 'coins' (can't afford it) or 'stock' (sold out).
+   */
+  buyItem: (guildId, userId, item, quantity) => {
+    try {
+      return transaction(() => {
+        if (!takeCoins(guildId, userId, item.price * quantity)) return 'coins';
+        // Throwing rolls back the coins taken above.
+        if (item.stock !== null && stmt.takeStock.run(quantity, item.id, quantity).changes !== 1) throw new SoldOut();
+        stmt.addToInventory.run(guildId, userId, item.id, quantity);
+        return 'ok';
+      });
+    } catch (err) {
+      if (err instanceof SoldOut) return 'stock';
+      throw err;
+    }
+  },
+
+  /** Undoes a purchase, for when giving a bought role fails. */
+  refundItem: (guildId, userId, item, quantity) =>
+    transaction(() => {
+      stmt.removeFromInventory.run(quantity, guildId, userId, item.id, quantity);
+      stmt.giveStock.run(quantity, item.id);
+      addCoins(guildId, userId, item.price * quantity);
+    }),
+
+  addTickets: (guildId, userId, tickets) => stmt.addTickets.run(guildId, userId, tickets),
+  ticketsOf: (guildId, userId) => stmt.ticketsOf.get(guildId, userId)?.tickets ?? 0,
+  allTickets: (guildId) => stmt.allTickets.all(guildId),
+  clearTickets: (guildId) => stmt.clearTickets.run(guildId),
+  lotteryRounds: () => stmt.lotteryGuilds.all(),
+
+  getMeta: (guildId, key) => stmt.getMeta.get(guildId, key)?.value ?? null,
+  setMeta: (guildId, key, value) => stmt.setMeta.run(guildId, key, String(value)),
+  deleteMeta: (guildId, key) => stmt.deleteMeta.run(guildId, key),
 };

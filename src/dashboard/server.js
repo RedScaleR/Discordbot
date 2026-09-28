@@ -10,6 +10,7 @@ const { feed, record, recentActivity } = require('../activity');
 const { SECTIONS, sanitize } = require('./settingsSchema');
 const { chat, listModels, AiError } = require('../ai/providers');
 const { systemPrompt } = require('../ai/personalities');
+const { selfRoleProblem } = require('../util/moderation');
 const { version } = require('../../package.json');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -151,6 +152,7 @@ function memberDetail(client, guild, userId) {
     ...memberSummary(client, guild, userId, row, warnings.length),
     progress: levelFromXp(row?.xp ?? 0),
     streak: row?.daily_streak ?? 0,
+    inventory: db.inventory(guild.id, userId).map((item) => ({ emoji: item.emoji, name: item.name, kind: item.kind, quantity: item.quantity })),
     joinedAt: member?.joinedTimestamp ?? null,
     inServer: Boolean(member),
     warningList: warnings.map((warning) => ({
@@ -160,6 +162,54 @@ function memberDetail(client, guild, userId) {
       time: warning.created_at,
     })),
   };
+}
+
+const ITEM_KINDS = ['item', 'badge', 'role'];
+
+function shopPayload(guild) {
+  const items = db.shopItems(guild.id).map((item) => ({
+    id: item.id,
+    name: item.name,
+    emoji: item.emoji,
+    description: item.description,
+    price: item.price,
+    kind: item.kind,
+    roleId: item.role_id,
+    stock: item.stock,
+    sold: item.sold,
+  }));
+  // Every role, with the reason it can't be sold (if any), so the page can grey those out.
+  const roles = guild.roles.cache
+    .filter((role) => role.id !== guild.id)
+    .sort((a, b) => b.position - a.position)
+    .map((role) => ({ id: role.id, name: role.name, color: role.hexColor, problem: selfRoleProblem(role)?.replace(/<@&\d+>/g, role.name) ?? null }));
+  return { items, roles, currency: config.economy.currency };
+}
+
+/** Checks a shop item from the page. Throws a 400 with a friendly message if something's off. */
+function cleanItem(guild, input = {}) {
+  const fail = (message) => {
+    throw new HttpError(400, message);
+  };
+  const name = String(input.name ?? '').trim();
+  if (!name || name.length > 50) fail('The name needs to be 1 to 50 characters');
+  const emoji = String(input.emoji ?? '').trim() || '🎁';
+  if (emoji.length > 40) fail('The emoji is too long');
+  const description = String(input.description ?? '').trim();
+  if (description.length > 200) fail('The description can be 200 characters at most');
+  if (!Number.isSafeInteger(input.price) || input.price < 0 || input.price > 1_000_000_000) fail('The price must be a whole number of 0 or more');
+  if (!ITEM_KINDS.includes(input.kind)) fail('Pick what kind of thing it is');
+  const stock = input.stock === null || input.stock === '' || input.stock === undefined ? null : input.stock;
+  if (stock !== null && (!Number.isSafeInteger(stock) || stock < 0 || stock > 1_000_000)) fail('Stock must be empty (unlimited) or a whole number');
+
+  let roleId = null;
+  if (input.kind === 'role') {
+    const role = guild.roles.cache.get(String(input.roleId ?? ''));
+    const problem = selfRoleProblem(role);
+    if (problem) fail(role ? `${role.name}: ${problem.replace(/<@&\d+>/g, 'this role')}` : 'Pick a role to sell');
+    roleId = role.id;
+  }
+  return { name, emoji, description, price: input.price, kind: input.kind, roleId, stock };
 }
 
 function wholeNumber(value, label) {
@@ -270,6 +320,26 @@ async function handleApi(client, req, res, url) {
         ]),
       );
       return sendJson(res, 200, { reply: text, model });
+    }
+    case 'GET /shop':
+      return sendJson(res, 200, shopPayload(guild));
+    case 'POST /shop': {
+      const item = cleanItem(guild, (await readJson(req)).item);
+      db.addShopItem(guild.id, item);
+      await announce(guild, `Added ${item.emoji} ${item.name} to the shop for ${item.price.toLocaleString()} coins`);
+      return sendJson(res, 200, shopPayload(guild));
+    }
+    case 'PUT /shop/:id': {
+      const item = cleanItem(guild, (await readJson(req)).item);
+      if (!db.updateShopItem(guild.id, Number(id), item)) throw new HttpError(404, 'That item is gone');
+      await announce(guild, `Changed the shop item ${item.emoji} ${item.name}`);
+      return sendJson(res, 200, shopPayload(guild));
+    }
+    case 'DELETE /shop/:id': {
+      const item = db.shopItem(guild.id, Number(id));
+      if (!item || !db.removeShopItem(guild.id, Number(id))) throw new HttpError(404, 'That item is already gone');
+      await announce(guild, `Removed ${item.emoji} ${item.name} from the shop`);
+      return sendJson(res, 200, shopPayload(guild));
     }
     case 'GET /members':
       return sendJson(res, 200, listMembers(client, guild, url.searchParams.get('q') ?? ''));

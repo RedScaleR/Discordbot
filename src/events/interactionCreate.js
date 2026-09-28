@@ -20,6 +20,19 @@ module.exports = {
   async execute(interaction) {
     if (!interaction.inCachedGuild()) return;
 
+    // Suggestions while someone is still typing an option (like /buy item).
+    if (interaction.isAutocomplete()) {
+      const command = interaction.client.commands.get(interaction.commandName);
+      if (!command?.autocomplete) return;
+      try {
+        await command.autocomplete(interaction);
+      } catch (err) {
+        console.error(`[autocomplete /${interaction.commandName}]`, err);
+        await interaction.respond([]).catch(() => {});
+      }
+      return;
+    }
+
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);
       if (!command) return;

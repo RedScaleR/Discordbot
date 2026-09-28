@@ -194,6 +194,19 @@ code {
   font-weight: 600;
 }
 
+@media (max-width: 600px) {
+  .tabs {
+    order: 3;
+    width: 100%;
+  }
+  .tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 2px;
+    font-size: 14px;
+  }
+}
+
 .tabs button[aria-selected='true'] {
   background: var(--surface);
   color: var(--brand);
@@ -1141,4 +1154,67 @@ tr:last-child td {
   color: var(--muted);
   margin-top: 4px;
   overflow-wrap: anywhere;
+}
+
+/* ---------- Shop ---------- */
+
+.shop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .shop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.shop-form h2 {
+  margin-bottom: 16px;
+}
+
+.shop-fields {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.shop-fields label {
+  display: block;
+  min-width: 0;
+}
+
+.shop-fields .wide {
+  grid-column: 1 / -1;
+}
+
+.shop-fields input,
+.shop-fields select {
+  width: 100%;
+}
+
+.shop-fields .emoji-field input {
+  text-align: center;
+  font-size: 18px;
+}
+
+.shop-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.row-actions .btn + .btn {
+  margin-left: 6px;
+}
+
+.chip-static {
+  padding: 4px 12px;
 }
